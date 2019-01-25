@@ -2,63 +2,34 @@
 
 .section	.rodata
 NUM1:
-		.asciz	"NUM1: 0x%llu\n"
+		.asciz	"NUM1: 0x%lx%lx\n"
 NUM2:
-		.asciz	"NUM2: 0x%llu\n"
+		.asciz	"NUM2: 0x%lx\n"
 
 .data
-n1: .space 64, 0
-	#.d 	0
-n2:	.space 64, 0	
-	#.quad	0
+index:		.quad 0
 
 .section	.text
 .type	fibonacci, @function
 fibonacci:
 	call atoi	# Takes argv[1] and sends it to atoi
-	cmp rax, 0 	# Checks if 0 was on command line
+	mov rcx, rax
+	cmp rcx, 0 	# Checks if 0 was on command line
 	je .no_count
+	mov rdx, 0
+	mov rax, 1
+	mov r10, 0
+	xor r15, r15
+	xor r8, r8
 .start_loop:
-	# xadd rdx, rbx
-	mov rdx, n2
-	cmp rdx, n1 
-	ja	.n2_first
-	mov rbx, [n1]
-	add [n2], rbx
-	#mov rbx, [n1+4]
-	#adc [n2+4], rbx
-	mov rbx, [n2]
-	cmp [n1], rbx
-	mov rsi, [n1]
 	clc
-	#mov r10, [n1+4]
-	jl .reloop
-	mov rbx, [n2]
-	mov [n1], rbx
-	#mov rbx, [n2+4]
-	#mov [n1+4], rbx
-	jmp .reloop
-
-.n2_first:
-	mov rbx, [n2]
-	add [n1], rbx
-	#mov rbx, [n2+4]
-	#adc [n1+4], rbx
-	mov rbx, [n1]
-	cmp [n2], rbx
-	mov rsi, [n2]
-	#mov r10, [n2+4]
-	clc
-	jl .reloop
-	mov rbx, [n1]
-	mov [n2], rbx
-	#mov rbx, [n1+4]
-	#mov [n2+4], rbx
-	jmp .reloop
+	xadd rax, rdx
+	adc r8, 0
+	xadd r15, r8
 
 .reloop:
-	dec rax
-	cmp rax, 0
+	dec rcx
+	cmp rcx, 0
 	jne .start_loop
 	jmp .end
 
@@ -67,6 +38,7 @@ fibonacci:
 	ret
 
 .end:
+	
 	ret
 
 .globl	main
@@ -81,25 +53,19 @@ main:
 
 	add rsi, 0x8
 	mov rdi, 1
-	mov [n1], rdi
+	#mov [n2], rdi
 	mov rdi, [rsi]
 	call fibonacci
-	mov rsi, [n1]
+	mov rsi, r8
+
 	mov rdi, OFFSET NUM1	# Preps format string
 	mov rax, 0	# Needed for printf
 	call printf
-	#mov rsi, [n1+8]
-	#mov rdi, OFFSET NUM1	# Preps format string
-	#mov rax, 0	# Needed for printf
-	#call printf
-	mov rsi, [n2]
+
+	mov rsi, r8
 	mov rdi, OFFSET NUM2	# Preps format string
 	mov rax, 0	# Needed for printf
 	call printf
-	#mov rsi, [n2+8]
-	#mov rdi, OFFSET NUM2	# Preps format string
-	#mov rax, 0	# Needed for printf
-	#call printf
 
 
 	mov rbx, [rbp-0x18]
