@@ -1,6 +1,7 @@
 .intel_syntax noprefix
 
 .section	.rodata
+#	Section is used to create printf strings as well as error message
 first:
 		.asciz	"0x%.lx%.lx%.lx%.lx\n"
 second:
@@ -11,17 +12,31 @@ fourth:
 		.asciz	"0x%.lx%lx%016lx%016lx\n"
 fifth:
 		.asciz	"0x%lx%016lx%016lx%016lx\n"
+errormsg:
+		.asciz "Usage: ./fibonacci <0-300>"
 
-.data
-index:		.quad 0
+.section .data
+#	Section used to store 
+endp:		.quad 0
 
 .section	.text
 .type	fibonacci, @function
 fibonacci:
-	call atoi	# Takes argv[1] and sends it to atoi
+	mov rdx, 0
+	mov rsi, OFFSET endp
+	call strtol
+	push rax
+	lea rsi, endp
+	mov rsi, [rsi]
+	mov al, [rsi]
+	cmp al, 0
+	jne .error
+	pop rax
 	mov rcx, rax
+	cmp rcx, 300
+	ja .error
 	cmp rcx, 0 	# Checks if 0 was on command line
-	je .2
+	je .zero
 	mov rdx, 0
 	mov rax, 1
 	xor r8, r8
@@ -79,12 +94,20 @@ fibonacci:
 	jmp .print
 .5:
 	mov rdi, OFFSET fifth
+	jmp	.print
+
+.zero:
+	mov rsi, 0
+	mov rdi, OFFSET second	# Preps format string
+
 
 
 .print:
 	mov rax, 0	# Needed for printf
 	call printf
+	mov rax, 0
 	ret
+
 
 .globl	main
 .type	main, @function
@@ -99,10 +122,17 @@ main:
 	add rsi, 0x8
 	mov rdi, 1
 	mov rdi, [rsi]
+	cmp rdi, 0
+	je .error
 	call fibonacci
-
+.exit:
 	mov rbx, [rbp-0x18]
 	add rsp, 0x30
 	pop rbp
-
 	ret
+
+.error:
+	mov rdi, OFFSET errormsg
+	call puts
+	mov rdi, 1
+	call exit
