@@ -16,29 +16,27 @@ errormsg:
 		.asciz "Usage: ./fibonacci <0-300>"
 
 .section .data
-#	Section used to store 
+#	Section used to store the endp of argv
 endp:		.quad 0
 
 .section	.text
 .type	fibonacci, @function
 fibonacci:
-	mov rdx, 0
-	mov rsi, OFFSET endp
+	mov rdx, 0	# Setting base for strtol
+	mov rsi, OFFSET endp	# Passing in char ** for strtol
 	call strtol
-	push rax
-	lea rsi, endp
-	mov rsi, [rsi]
-	mov al, [rsi]
-	cmp al, 0
-	jne .error
-	pop rax
-	mov rcx, rax
-	cmp rcx, 300
+	lea rsi, endp	# Getting the char** back into register
+	mov rsi, [rsi]	
+	mov r15b, [rsi] # Grabbing the first character of endp
+	cmp r15b, 0	# Checking that it's null
+	jne .error	# Did not reach the end of the string
+	mov rcx, rax	# Number of loops
+	cmp rcx, 300	# Checking max bounds
 	ja .error
-	cmp rcx, 0 	# Checks if 0 was on command line
+	cmp rcx, 0 	# Checks if 0 
 	je .zero
-	mov rdx, 0
-	mov rax, 1
+	mov rdx, 0	# First Fibonacci number
+	mov rax, 1	# Second Fibonacci number
 	xor r8, r8
 	xor r9, r9
 	xor r10, r10
@@ -46,7 +44,7 @@ fibonacci:
 	xor r12, r12
 	xor r15, r15
 .start_loop:
-	clc
+# Loop to calculate and store fibonacci numbers
 	xadd rax, rdx
 	adc r8, 0
 	xadd r15, r8
@@ -56,21 +54,19 @@ fibonacci:
 	xadd r12, r11
 
 .reloop:
-	dec rcx
+	dec rcx	# Rcx is the end condition
 	cmp rcx, 0
 	jne .start_loop
 	jmp .end
 
-	
-.no_count:
-	ret
-
 .end:
+#	Prepping for printf, moving fibonacci number into proper registers
 	mov rsi, r11
 	mov rcx, r8
 	mov rax, rdx
 	mov rdx, r9
 	mov r8, rax
+#	Block of compares for proper printf string to pass
 	cmp r8, 0
 	je .1
 	cmp rcx, 0
@@ -100,18 +96,16 @@ fibonacci:
 	mov rsi, 0
 	mov rdi, OFFSET second	# Preps format string
 
-
-
 .print:
 	mov rax, 0	# Needed for printf
 	call printf
-	mov rax, 0
+	mov rax, 0	# Successfull fibonacci
 	ret
-
 
 .globl	main
 .type	main, @function
 main:
+	# Initial setup as in instructor example
 	push rbp
 	mov rbp, rsp
 	sub rsp, 0x30
@@ -119,19 +113,20 @@ main:
 	mov [rsp-0x10], rsi
 	mov [rsp-0x18], rbx
 
-	add rsi, 0x8
-	mov rdi, 1
-	mov rdi, [rsi]
-	cmp rdi, 0
+	add rsi, 0x8	# moving pointer to argv[1]
+	mov rdi, [rsi]	# Getting the pointer of argv[1]
+	cmp rdi, 0	# Making sure argv is pointing to a string
 	je .error
 	call fibonacci
 .exit:
+#	Cleaning up my mess and resetting stack and base pointers
 	mov rbx, [rbp-0x18]
 	add rsp, 0x30
 	pop rbp
 	ret
 
 .error:
+#	Prints error message
 	mov rdi, OFFSET errormsg
 	call puts
 	mov rdi, 1
